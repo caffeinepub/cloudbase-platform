@@ -17,6 +17,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const didRegister = useRef(false);
 
@@ -41,35 +42,89 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
     const savedEmail = localStorage.getItem("cs_user_email") || email;
 
+    if (!savedEmail) {
+      console.warn(
+        "[CloudSphere] Login: no email available, aborting registration",
+      );
+      toast.error("Account not found. Please create an account.", {
+        description: "Enter your email and try again.",
+      });
+      didRegister.current = false;
+      return;
+    }
+
     if (rememberMe) {
       localStorage.setItem("cs_remember_me", "true");
+    } else {
+      localStorage.removeItem("cs_remember_me");
     }
 
     setIsRegistering(true);
+    console.log(
+      "[CloudSphere] Login: attempting registration/login for",
+      savedEmail,
+    );
 
-    // Register (idempotent) then check role
+    // Check if user already has a record first; registerUser is idempotent (returns existing)
     actor
-      .registerUser(savedEmail || "user@cloudsphere.app")
+      .registerUser(savedEmail)
       .then((userRecord) => {
+        console.log(
+          "[CloudSphere] Login: registration/login success, userId:",
+          userRecord.userId.toString(),
+        );
         localStorage.setItem("cs_user_email", userRecord.email || savedEmail);
+        console.log("[CloudSphere] Login: checking admin status…");
         return actor.isCallerAdmin();
       })
       .then((isAdmin) => {
+        console.log(
+          "[CloudSphere] Login: isAdmin =",
+          isAdmin,
+          "— routing to",
+          isAdmin ? "admin" : "dashboard",
+        );
         setIsRegistering(false);
+        toast.success("Signed in successfully!");
         onNavigate(isAdmin ? "admin" : "dashboard");
       })
-      .catch(() => {
-        // If registerUser fails (already registered), still route in
-        actor
-          .isCallerAdmin()
-          .then((isAdmin) => {
-            setIsRegistering(false);
-            onNavigate(isAdmin ? "admin" : "dashboard");
-          })
-          .catch(() => {
-            setIsRegistering(false);
-            onNavigate("dashboard");
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[CloudSphere] Login error:", msg);
+
+        if (
+          msg.toLowerCase().includes("already") ||
+          msg.toLowerCase().includes("exist")
+        ) {
+          // Still registered — try routing
+          actor
+            .isCallerAdmin()
+            .then((isAdmin) => {
+              setIsRegistering(false);
+              toast.success("Signed in successfully!");
+              onNavigate(isAdmin ? "admin" : "dashboard");
+            })
+            .catch(() => {
+              setIsRegistering(false);
+              onNavigate("dashboard");
+            });
+        } else if (
+          msg.toLowerCase().includes("not found") ||
+          msg.toLowerCase().includes("not register")
+        ) {
+          setIsRegistering(false);
+          toast.error("Account not found. Please create an account.", {
+            description:
+              "No account is linked to this identity. Please sign up first.",
           });
+          didRegister.current = false;
+        } else {
+          setIsRegistering(false);
+          toast.error("Sign in failed. Please try again.", {
+            description: msg,
+          });
+          didRegister.current = false;
+        }
       });
   }, [identity, actor, isActorFetching, email, rememberMe, onNavigate]);
 
@@ -81,9 +136,25 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
   };
 
   const handleLogin = () => {
-    if (email) {
-      localStorage.setItem("cs_user_email", email);
+    // Validate email
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      toast.error("Please enter your email address before signing in.");
+      return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setEmailError("Please enter a valid email address");
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    setEmailError("");
+    localStorage.setItem("cs_user_email", email.trim());
+    console.log(
+      "[CloudSphere] Login: initiating Internet Identity login for",
+      email.trim(),
+    );
     login();
   };
 
@@ -163,19 +234,27 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                 htmlFor="email"
                 className="text-sm font-medium text-foreground/80"
               >
-                Email address
+                Email address <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError("");
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                className="bg-secondary/30 border-border/60 focus:border-primary/50 focus:ring-primary/20 h-11"
+                className={`bg-secondary/30 border-border/60 focus:border-primary/50 focus:ring-primary/20 h-11 ${
+                  emailError ? "border-destructive/60" : ""
+                }`}
                 autoComplete="email"
                 disabled={isProcessing}
               />
+              {emailError && (
+                <p className="text-xs text-destructive">{emailError}</p>
+              )}
             </div>
 
             {/* Password (display only — auth is via Internet Identity) */}

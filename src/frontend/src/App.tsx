@@ -45,11 +45,11 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
-  // If user is already authenticated and tries to visit login/signup, redirect to dashboard
+  // If user is already authenticated and on a protected page with no session, redirect to login
   useEffect(() => {
-    if (!isInitializing && identity) {
-      if (currentPage === "login" || currentPage === "signup") {
-        navigate("dashboard");
+    if (!isInitializing && !identity) {
+      if (currentPage === "dashboard" || currentPage === "admin") {
+        navigate("login");
       }
     }
   }, [identity, isInitializing, currentPage, navigate]);

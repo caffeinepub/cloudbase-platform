@@ -34,44 +34,87 @@ export default function SignUpPage({ onNavigate }: SignUpPageProps) {
     didRegister.current = true;
 
     const savedEmail = localStorage.getItem("cs_user_email") || email;
+
+    if (!savedEmail) {
+      console.warn(
+        "[CloudSphere] SignUp: no email found, aborting registration",
+      );
+      toast.error("Email is required to create an account.");
+      didRegister.current = false;
+      return;
+    }
+
     setIsRegistering(true);
+    console.log("[CloudSphere] SignUp: starting registration for", savedEmail);
 
     actor
-      .registerUser(savedEmail || "user@cloudsphere.app")
+      .registerUser(savedEmail)
       .then((userRecord) => {
+        console.log(
+          "[CloudSphere] SignUp: DB insert success, userId:",
+          userRecord.userId.toString(),
+        );
         localStorage.setItem("cs_user_email", userRecord.email || savedEmail);
         localStorage.setItem("cs_user_joined", new Date().toISOString());
         setIsRegistering(false);
+        console.log("[CloudSphere] SignUp: routing to dashboard");
         toast.success("Account created! Welcome to CloudSphere.");
         onNavigate("dashboard");
       })
       .catch((err: unknown) => {
-        // If already registered, still proceed to dashboard
         const msg = err instanceof Error ? err.message : String(err);
+        console.error("[CloudSphere] SignUp error:", msg);
+
         if (
           msg.toLowerCase().includes("already") ||
           msg.toLowerCase().includes("exist")
         ) {
+          // Already registered with this identity — route to login
           setIsRegistering(false);
-          onNavigate("dashboard");
+          toast.error("Email already exists.", {
+            description:
+              "An account with this identity already exists. Please sign in.",
+          });
+          onNavigate("login");
+        } else if (
+          msg.toLowerCase().includes("not found") ||
+          msg.toLowerCase().includes("not register")
+        ) {
+          setIsRegistering(false);
+          toast.error("Account not found. Please create an account.", {
+            description: "Registration did not complete. Please try again.",
+          });
+          didRegister.current = false;
         } else {
           setIsRegistering(false);
-          toast.error("Registration failed. Please try again.");
+          toast.error("Registration failed. Please try again.", {
+            description: msg,
+          });
+          didRegister.current = false;
         }
       });
   }, [identity, actor, isActorFetching, email, onNavigate]);
 
   const validate = () => {
     const errs: typeof errors = {};
-    if (!email) {
+
+    if (!email.trim()) {
       errs.email = "Email is required";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        errs.email = "Please enter a valid email address";
+      }
     }
+
     if (password && password.length < 8) {
       errs.password = "Password must be at least 8 characters";
     }
+
     if (password && confirmPassword && password !== confirmPassword) {
       errs.confirm = "Passwords do not match";
     }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -81,9 +124,11 @@ export default function SignUpPage({ onNavigate }: SignUpPageProps) {
       toast.error("Please fix the errors before continuing");
       return;
     }
-    if (email) {
-      localStorage.setItem("cs_user_email", email);
-    }
+    localStorage.setItem("cs_user_email", email.trim());
+    console.log(
+      "[CloudSphere] SignUp: initiating Internet Identity login for",
+      email.trim(),
+    );
     login();
   };
 
@@ -152,7 +197,7 @@ export default function SignUpPage({ onNavigate }: SignUpPageProps) {
                 htmlFor="email"
                 className="text-sm font-medium text-foreground/80"
               >
-                Email address
+                Email address <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"

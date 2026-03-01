@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Files, Loader2, RefreshCw, Upload } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DashboardSidebar from "../components/DashboardSidebar";
 import FilesTable from "../components/FilesTable";
 import StorageStats from "../components/StorageStats";
@@ -19,6 +19,8 @@ interface DashboardPageProps {
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAutoRegistering, setIsAutoRegistering] = useState(false);
+  const didAutoRegister = useRef(false);
 
   const { identity, isInitializing } = useInternetIdentity();
   const { actor, isFetching: isActorFetching } = useActor();
@@ -36,7 +38,8 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     refetch: refetchProfile,
   } = useUserProfile();
 
-  const isLoading = filesLoading || profileLoading || isActorFetching;
+  const isLoading =
+    filesLoading || profileLoading || isActorFetching || isAutoRegistering;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -44,6 +47,67 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       onNavigate("login");
     }
   }, [identity, isInitializing, onNavigate]);
+
+  // Auto-register: if actor is ready and profile is null (not loading), ensure user is registered
+  useEffect(() => {
+    if (
+      !actor ||
+      isActorFetching ||
+      profileLoading ||
+      didAutoRegister.current ||
+      (userProfile !== null && userProfile !== undefined)
+    )
+      return;
+
+    // userProfile is null/undefined after loading finished — user not in DB
+    if (userProfile === null || userProfile === undefined) {
+      const savedEmail = localStorage.getItem("cs_user_email");
+      if (!savedEmail) return;
+
+      didAutoRegister.current = true;
+      setIsAutoRegistering(true);
+      console.log(
+        "[CloudSphere] Dashboard: auto-registering unregistered session for",
+        savedEmail,
+      );
+
+      actor
+        .registerUser(savedEmail)
+        .then((userRecord) => {
+          console.log(
+            "[CloudSphere] Dashboard: auto-registration success, userId:",
+            userRecord.userId.toString(),
+          );
+          localStorage.setItem("cs_user_email", userRecord.email || savedEmail);
+          setIsAutoRegistering(false);
+          refetchProfile();
+          refetchFiles();
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(
+            "[CloudSphere] Dashboard: auto-registration error:",
+            msg,
+          );
+          setIsAutoRegistering(false);
+          // If already registered, just refetch
+          if (
+            msg.toLowerCase().includes("already") ||
+            msg.toLowerCase().includes("exist")
+          ) {
+            refetchProfile();
+            refetchFiles();
+          }
+        });
+    }
+  }, [
+    actor,
+    isActorFetching,
+    profileLoading,
+    userProfile,
+    refetchProfile,
+    refetchFiles,
+  ]);
 
   // Check admin status
   useEffect(() => {

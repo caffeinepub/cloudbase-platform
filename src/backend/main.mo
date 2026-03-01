@@ -9,10 +9,10 @@ import Nat "mo:core/Nat";
 import Runtime "mo:core/Runtime";
 import Iter "mo:core/Iter";
 import AccessControl "authorization/access-control";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 
-(with migration = Migration.run)
+
 actor {
   include MixinStorage();
 
