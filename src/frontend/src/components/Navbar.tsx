@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Cloud,
+  LayoutDashboard,
   Loader2,
   LogIn,
   LogOut,
@@ -16,13 +17,16 @@ const navLinks = [
   { label: "About", href: "#about" },
   { label: "Services", href: "#services" },
   { label: "Features", href: "#features" },
-  { label: "Upload", href: "#upload" },
 ];
 
-export default function Navbar() {
+interface NavbarProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function Navbar({ onNavigate }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { identity, login, clear, isInitializing, isLoggingIn } =
+  const { identity, clear, isInitializing, isLoggingIn } =
     useInternetIdentity();
 
   const isAuthLoading = isInitializing || isLoggingIn;
@@ -41,6 +45,11 @@ export default function Navbar() {
     }
   };
 
+  const handleLogout = () => {
+    clear();
+    onNavigate?.("landing");
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -53,13 +62,13 @@ export default function Navbar() {
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className="flex items-center gap-2.5 group cursor-pointer"
-          aria-label="CloudBase home"
+          aria-label="CloudSphere home"
         >
           <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center group-hover:bg-primary/30 transition-colors duration-200 glow-cyan-sm">
             <Cloud className="w-4.5 h-4.5 text-primary" />
           </div>
           <span className="font-display font-bold text-xl text-gradient-cyan tracking-tight">
-            CloudBase
+            CloudSphere
           </span>
         </button>
 
@@ -98,6 +107,15 @@ export default function Navbar() {
                 exit={{ opacity: 0, x: 8 }}
                 className="flex items-center gap-2"
               >
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onNavigate?.("dashboard")}
+                  className="text-primary hover:text-primary/80 hover:bg-primary/10 font-medium transition-all duration-200 gap-1.5"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
+                </Button>
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
                   <UserCircle2 className="w-3.5 h-3.5" />
                   <span>Signed in</span>
@@ -105,7 +123,7 @@ export default function Navbar() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={clear}
+                  onClick={handleLogout}
                   className="text-muted-foreground hover:text-foreground hover:bg-secondary/50 font-medium transition-all duration-200 gap-1.5"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -118,15 +136,24 @@ export default function Navbar() {
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 8 }}
+                className="flex items-center gap-2"
               >
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={login}
-                  className="border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60 font-semibold transition-all duration-200 gap-1.5"
+                  variant="ghost"
+                  onClick={() => onNavigate?.("login")}
+                  className="text-muted-foreground hover:text-foreground font-medium transition-all duration-200 gap-1.5"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   Login
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onNavigate?.("signup")}
+                  className="border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60 font-semibold transition-all duration-200"
+                >
+                  Sign Up
                 </Button>
               </motion.div>
             )}
@@ -135,7 +162,7 @@ export default function Navbar() {
           <div className="w-px h-4 bg-border mx-1" />
           <Button
             size="sm"
-            onClick={() => handleNavClick("#upload")}
+            onClick={() => onNavigate?.("signup")}
             className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold btn-primary-glow transition-all duration-200"
           >
             Get Started
@@ -186,43 +213,60 @@ export default function Navbar() {
                     Loading…
                   </div>
                 ) : identity ? (
-                  <div className="flex items-center justify-between px-3 py-2 rounded-md bg-primary/10 border border-primary/20">
-                    <div className="flex items-center gap-2 text-primary text-sm font-medium">
-                      <UserCircle2 className="w-4 h-4" />
-                      Signed in
-                    </div>
+                  <>
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      className="w-full bg-primary/15 text-primary hover:bg-primary/25 border border-primary/25 font-semibold gap-2"
                       onClick={() => {
-                        clear();
+                        onNavigate?.("dashboard");
                         setMobileOpen(false);
                       }}
-                      className="text-muted-foreground hover:text-foreground h-7 px-2 gap-1.5"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Logout
+                      <LayoutDashboard className="w-4 h-4" />
+                      Go to Dashboard
                     </Button>
-                  </div>
+                    <div className="flex items-center justify-between px-3 py-2 rounded-md bg-secondary/30 border border-border/50">
+                      <div className="flex items-center gap-2 text-foreground/70 text-sm">
+                        <UserCircle2 className="w-4 h-4 text-primary" />
+                        Signed in
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          handleLogout();
+                          setMobileOpen(false);
+                        }}
+                        className="text-muted-foreground hover:text-foreground h-7 px-2 gap-1.5"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Logout
+                      </Button>
+                    </div>
+                  </>
                 ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60 font-semibold gap-2"
-                    onClick={() => {
-                      login();
-                      setMobileOpen(false);
-                    }}
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Login with Internet Identity
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full border-border/60 text-foreground/80 hover:text-foreground font-semibold gap-2"
+                      onClick={() => {
+                        onNavigate?.("login");
+                        setMobileOpen(false);
+                      }}
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Login
+                    </Button>
+                    <Button
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold btn-primary-glow gap-2"
+                      onClick={() => {
+                        onNavigate?.("signup");
+                        setMobileOpen(false);
+                      }}
+                    >
+                      Get Started
+                    </Button>
+                  </>
                 )}
-                <Button
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold btn-primary-glow"
-                  onClick={() => handleNavClick("#upload")}
-                >
-                  Get Started
-                </Button>
               </div>
             </div>
           </motion.div>

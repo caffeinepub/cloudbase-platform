@@ -19,13 +19,41 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
+export const UserRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const FileRecord = IDL.Record({
   'id' : IDL.Text,
+  'owner' : IDL.Principal,
   'blob' : ExternalBlob,
   'name' : IDL.Text,
   'size' : IDL.Nat,
   'mimeType' : IDL.Text,
+  'uploadDate' : IDL.Int,
+});
+export const UserRecord = IDL.Record({
+  'storageLimit' : IDL.Nat,
+  'userId' : IDL.Principal,
+  'isBlocked' : IDL.Bool,
+  'createdAt' : IDL.Int,
+  'role' : IDL.Text,
+  'email' : IDL.Text,
+  'usedStorage' : IDL.Nat,
+});
+export const UserProfile = IDL.Record({
+  'storageLimit' : IDL.Nat,
+  'principal' : IDL.Principal,
+  'isBlocked' : IDL.Bool,
+  'createdAt' : IDL.Int,
+  'usedStorage' : IDL.Nat,
+});
+export const StorageStats = IDL.Record({
+  'totalFiles' : IDL.Nat,
+  'totalStorageUsed' : IDL.Nat,
+  'totalUsers' : IDL.Nat,
 });
 
 export const idlService = IDL.Service({
@@ -55,11 +83,30 @@ export const idlService = IDL.Service({
       [],
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'adminDeleteFile' : IDL.Func([IDL.Text], [], []),
+  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'blockUser' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
+  'deleteFile' : IDL.Func([IDL.Text], [], []),
+  'getAllFiles' : IDL.Func([], [IDL.Vec(FileRecord)], ['query']),
+  'getAllUsers' : IDL.Func([], [IDL.Vec(UserRecord)], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getFile' : IDL.Func([IDL.Text], [FileRecord], ['query']),
-  'getUploadCount' : IDL.Func([], [IDL.Nat], ['query']),
-  'listFiles' : IDL.Func([], [IDL.Vec(FileRecord)], ['query']),
+  'getTotalStorageStats' : IDL.Func([], [StorageStats], ['query']),
+  'getUser' : IDL.Func([], [UserProfile], ['query']),
+  'getUserFiles' : IDL.Func([], [IDL.Vec(FileRecord)], ['query']),
+  'getUserProfile' : IDL.Func([], [UserRecord], ['query']),
+  'getUserProfile_compat' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
+  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'registerUser' : IDL.Func([IDL.Text], [UserRecord], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'uploadFile' : IDL.Func(
-      [IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
+      [IDL.Text, IDL.Nat, ExternalBlob, IDL.Text],
       [IDL.Text],
       [],
     ),
@@ -79,13 +126,41 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
+  const UserRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const FileRecord = IDL.Record({
     'id' : IDL.Text,
+    'owner' : IDL.Principal,
     'blob' : ExternalBlob,
     'name' : IDL.Text,
     'size' : IDL.Nat,
     'mimeType' : IDL.Text,
+    'uploadDate' : IDL.Int,
+  });
+  const UserRecord = IDL.Record({
+    'storageLimit' : IDL.Nat,
+    'userId' : IDL.Principal,
+    'isBlocked' : IDL.Bool,
+    'createdAt' : IDL.Int,
+    'role' : IDL.Text,
+    'email' : IDL.Text,
+    'usedStorage' : IDL.Nat,
+  });
+  const UserProfile = IDL.Record({
+    'storageLimit' : IDL.Nat,
+    'principal' : IDL.Principal,
+    'isBlocked' : IDL.Bool,
+    'createdAt' : IDL.Int,
+    'usedStorage' : IDL.Nat,
+  });
+  const StorageStats = IDL.Record({
+    'totalFiles' : IDL.Nat,
+    'totalStorageUsed' : IDL.Nat,
+    'totalUsers' : IDL.Nat,
   });
   
   return IDL.Service({
@@ -115,11 +190,30 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminDeleteFile' : IDL.Func([IDL.Text], [], []),
+    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'blockUser' : IDL.Func([IDL.Principal, IDL.Bool], [], []),
+    'deleteFile' : IDL.Func([IDL.Text], [], []),
+    'getAllFiles' : IDL.Func([], [IDL.Vec(FileRecord)], ['query']),
+    'getAllUsers' : IDL.Func([], [IDL.Vec(UserRecord)], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getFile' : IDL.Func([IDL.Text], [FileRecord], ['query']),
-    'getUploadCount' : IDL.Func([], [IDL.Nat], ['query']),
-    'listFiles' : IDL.Func([], [IDL.Vec(FileRecord)], ['query']),
+    'getTotalStorageStats' : IDL.Func([], [StorageStats], ['query']),
+    'getUser' : IDL.Func([], [UserProfile], ['query']),
+    'getUserFiles' : IDL.Func([], [IDL.Vec(FileRecord)], ['query']),
+    'getUserProfile' : IDL.Func([], [UserRecord], ['query']),
+    'getUserProfile_compat' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
+    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'registerUser' : IDL.Func([IDL.Text], [UserRecord], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'uploadFile' : IDL.Func(
-        [IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
+        [IDL.Text, IDL.Nat, ExternalBlob, IDL.Text],
         [IDL.Text],
         [],
       ),

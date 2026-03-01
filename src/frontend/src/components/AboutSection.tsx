@@ -71,7 +71,7 @@ export default function AboutSection() {
                 <span className="font-semibold text-primary">
                   Decentralized by design.
                 </span>{" "}
-                CloudBase runs on a distributed network, giving you resilience
+                CloudSphere runs on a distributed network, giving you resilience
                 and censorship-resistance built in.
               </p>
             </div>

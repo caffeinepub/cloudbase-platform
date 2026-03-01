@@ -36,7 +36,11 @@ const features = [
   },
 ];
 
-export default function FeaturesSection() {
+interface FeaturesSectionProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function FeaturesSection({ onNavigate }: FeaturesSectionProps) {
   return (
     <section id="features" className="relative py-24 sm:py-32">
       <div className="container mx-auto px-6">
@@ -49,7 +53,7 @@ export default function FeaturesSection() {
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/25 bg-primary/8 text-primary text-xs font-semibold tracking-wider uppercase mb-5">
-            Why CloudBase
+            Why CloudSphere
           </div>
           <h2 className="font-display font-bold text-4xl sm:text-5xl text-foreground mb-5">
             Built for{" "}
@@ -112,19 +116,15 @@ export default function FeaturesSection() {
             Ready to experience the difference?
           </h3>
           <p className="text-muted-foreground mb-6">
-            Join thousands of developers and businesses already building on
-            CloudBase.
+            Join thousands of users already storing files securely on
+            CloudSphere — 15 GB free, no credit card.
           </p>
           <button
             type="button"
-            onClick={() =>
-              document
-                .querySelector("#upload")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
+            onClick={() => onNavigate?.("signup")}
             className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 btn-primary-glow transition-all duration-200 cursor-pointer"
           >
-            Start Uploading — It's Free
+            Get Started — It's Free
           </button>
         </motion.div>
       </div>

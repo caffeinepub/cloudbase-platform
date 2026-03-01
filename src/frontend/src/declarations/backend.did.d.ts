@@ -13,11 +13,37 @@ import type { Principal } from '@icp-sdk/core/principal';
 export type ExternalBlob = Uint8Array;
 export interface FileRecord {
   'id' : string,
+  'owner' : Principal,
   'blob' : ExternalBlob,
   'name' : string,
   'size' : bigint,
   'mimeType' : string,
+  'uploadDate' : bigint,
 }
+export interface StorageStats {
+  'totalFiles' : bigint,
+  'totalStorageUsed' : bigint,
+  'totalUsers' : bigint,
+}
+export interface UserProfile {
+  'storageLimit' : bigint,
+  'principal' : Principal,
+  'isBlocked' : boolean,
+  'createdAt' : bigint,
+  'usedStorage' : bigint,
+}
+export interface UserRecord {
+  'storageLimit' : bigint,
+  'userId' : Principal,
+  'isBlocked' : boolean,
+  'createdAt' : bigint,
+  'role' : string,
+  'email' : string,
+  'usedStorage' : bigint,
+}
+export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -45,10 +71,25 @@ export interface _SERVICE {
     _CaffeineStorageRefillResult
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'adminDeleteFile' : ActorMethod<[string], undefined>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'blockUser' : ActorMethod<[Principal, boolean], undefined>,
+  'deleteFile' : ActorMethod<[string], undefined>,
+  'getAllFiles' : ActorMethod<[], Array<FileRecord>>,
+  'getAllUsers' : ActorMethod<[], Array<UserRecord>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getFile' : ActorMethod<[string], FileRecord>,
-  'getUploadCount' : ActorMethod<[], bigint>,
-  'listFiles' : ActorMethod<[], Array<FileRecord>>,
-  'uploadFile' : ActorMethod<[string, bigint, string, ExternalBlob], string>,
+  'getTotalStorageStats' : ActorMethod<[], StorageStats>,
+  'getUser' : ActorMethod<[], UserProfile>,
+  'getUserFiles' : ActorMethod<[], Array<FileRecord>>,
+  'getUserProfile' : ActorMethod<[], UserRecord>,
+  'getUserProfile_compat' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'registerUser' : ActorMethod<[string], UserRecord>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'uploadFile' : ActorMethod<[string, bigint, ExternalBlob, string], string>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

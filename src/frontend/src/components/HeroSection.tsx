@@ -4,8 +4,8 @@ import { motion } from "motion/react";
 
 const stats = [
   { icon: Shield, label: "AES-256 Encrypted", value: "100%" },
+  { icon: Globe, label: "Free Storage", value: "15 GB" },
   { icon: Zap, label: "Response Time", value: "<100ms" },
-  { icon: Globe, label: "Global Regions", value: "24+" },
 ];
 
 const handleScroll = (id: string) => {
@@ -13,7 +13,11 @@ const handleScroll = (id: string) => {
   if (el) el.scrollIntoView({ behavior: "smooth" });
 };
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background image */}
@@ -76,9 +80,9 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="font-display font-bold text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05] tracking-tight mb-6"
         >
-          <span className="text-foreground">Powerful Cloud</span>
+          <span className="text-foreground">Secure. Scalable.</span>
           <br />
-          <span className="text-gradient-cyan">Storage & Deployment</span>
+          <span className="text-gradient-cyan">15 GB Free Cloud Storage.</span>
         </motion.h1>
 
         {/* Tagline */}
@@ -88,7 +92,7 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.35 }}
           className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Deploy faster. Store securely. Scale without limits.
+          Store, Deploy, and Manage Your Data with Advanced Cloud Technology.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -100,7 +104,9 @@ export default function HeroSection() {
         >
           <Button
             size="lg"
-            onClick={() => handleScroll("#upload")}
+            onClick={() =>
+              onNavigate ? onNavigate("signup") : handleScroll("#upload")
+            }
             className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8 py-6 text-base rounded-xl btn-primary-glow transition-all duration-200 group"
           >
             Get Started
@@ -109,10 +115,12 @@ export default function HeroSection() {
           <Button
             size="lg"
             variant="outline"
-            onClick={() => handleScroll("#about")}
+            onClick={() =>
+              onNavigate ? onNavigate("login") : handleScroll("#about")
+            }
             className="border-primary/30 text-foreground hover:border-primary/60 hover:bg-primary/5 font-semibold px-8 py-6 text-base rounded-xl transition-all duration-200"
           >
-            Learn More
+            Login
           </Button>
         </motion.div>
 
